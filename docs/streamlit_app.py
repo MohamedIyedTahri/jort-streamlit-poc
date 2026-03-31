@@ -43,6 +43,18 @@ def load_json_records(json_path: str) -> List[Dict[str, Any]]:
 
 
 @st.cache_data(show_spinner=False)
+def load_metrics_summary(summary_path: str) -> Dict[str, Any]:
+    path = Path(summary_path)
+    if not path.exists():
+        return {}
+    with path.open("r", encoding="utf-8") as f:
+        data = json.load(f)
+    if isinstance(data, dict):
+        return data
+    return {}
+
+
+@st.cache_data(show_spinner=False)
 def load_markdown_file(md_path: str) -> str:
     path = Path(md_path)
     if not path.exists():
@@ -160,6 +172,7 @@ def render_sidebar() -> Dict[str, Any]:
 
     default_output = str(PROJECT_ROOT / "output" / "extracted_notices.json")
     output_path = st.sidebar.text_input("Output JSON path", value=default_output)
+    summary_path = str(PROJECT_ROOT / "output" / "metrics_summary.json")
 
     year_range = st.sidebar.slider(
         "Years in focus",
@@ -184,6 +197,7 @@ def render_sidebar() -> Dict[str, Any]:
     return {
         "mode": mode,
         "output_path": output_path,
+        "summary_path": summary_path,
         "year_range": year_range,
         "friend_index": friend_index,
     }
@@ -357,7 +371,7 @@ def render_chapter_diagram(selected_step: str) -> None:
     components.html(base_style + diagram_html, height=240, scrolling=False)
 
 
-def render_tutor_presentation(output_path: str, year_range: tuple[int, int]) -> None:
+def render_tutor_presentation(output_path: str, summary_path: str, year_range: tuple[int, int]) -> None:
     st.subheader("Tutor Presentation - Story Mode")
     st.caption("Version narrative, visuelle et fun pour la restitution.")
 
@@ -604,7 +618,35 @@ def render_tutor_presentation(output_path: str, year_range: tuple[int, int]) -> 
 
         st.dataframe(missing_df, width="stretch", hide_index=True)
     else:
-        st.info("No dataset loaded yet. Run the pipeline to unlock metrics on this page.")
+        summary = load_metrics_summary(summary_path)
+        if summary:
+            meta = summary.get("meta", {})
+            m1, m2, m3 = st.columns(3)
+            m1.metric("Parsed records", int(meta.get("total_records", 0)))
+            m2.metric("Years", int(meta.get("years", 0)))
+            m3.metric("Legal forms", int(meta.get("legal_forms", 0)))
+
+            by_year = pd.DataFrame(
+                [{"year": str(k), "count": v} for k, v in summary.get("records_by_year", {}).items()]
+            )
+            if not by_year.empty:
+                st.bar_chart(by_year.set_index("year"))
+
+            miss = summary.get("missing_fields", {})
+            miss_df = pd.DataFrame(
+                [
+                    {
+                        "field": k,
+                        "missing_count": v.get("missing_count", 0),
+                        "missing_rate": v.get("missing_rate", 0.0),
+                    }
+                    for k, v in miss.items()
+                ]
+            )
+            if not miss_df.empty:
+                st.dataframe(miss_df, width="stretch", hide_index=True)
+        else:
+            st.info("No dataset metrics found yet.")
 
     st.markdown("### Key narrative line")
     st.info(
@@ -797,7 +839,7 @@ def render_single_notice_demo(friend_index: Dict[str, Dict[str, str]]) -> None:
     st.dataframe(pd.DataFrame(status_rows), width="stretch", hide_index=True)
 
 
-def render_dataset_analytics(output_path: str, year_range: tuple[int, int]) -> None:
+def render_dataset_analytics(output_path: str, summary_path: str, year_range: tuple[int, int]) -> None:
     st.subheader("Dataset Analytics")
 
     st.markdown("### Analytics workflow")
@@ -821,7 +863,58 @@ def render_dataset_analytics(output_path: str, year_range: tuple[int, int]) -> N
 
     records = load_json_records(output_path)
     if not records:
-        st.warning("No records found. Run the pipeline first or check the output JSON path.")
+        summary = load_metrics_summary(summary_path)
+        if not summary:
+            st.warning("No records found. Run the pipeline first or check the output JSON path.")
+            return
+
+        st.success("Loaded aggregated metrics (privacy-safe, no raw rows).")
+        meta = summary.get("meta", {})
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Records", int(meta.get("total_records", 0)))
+        c2.metric("Legal forms", int(meta.get("legal_forms", 0)))
+        c3.metric("Years", int(meta.get("years", 0)))
+        c4.metric("Range", f"{meta.get('year_range', [YEAR_MIN, YEAR_MAX])[0]}-{meta.get('year_range', [YEAR_MIN, YEAR_MAX])[1]}")
+
+        by_year = pd.DataFrame(
+            [{"year": str(k), "count": v} for k, v in summary.get("records_by_year", {}).items()]
+        )
+        by_form = pd.DataFrame(
+            [{"legal_form": k, "count": v} for k, v in summary.get("records_by_legal_form", {}).items()]
+        )
+        matrix_raw = summary.get("year_legal_form_matrix", {})
+
+        if not by_year.empty:
+            st.markdown("### Records per year")
+            st.line_chart(by_year.set_index("year"))
+
+        if not by_form.empty:
+            st.markdown("### Records by legal form")
+            st.bar_chart(by_form.set_index("legal_form"))
+            st.dataframe(by_form, width="stretch", hide_index=True)
+
+        if matrix_raw:
+            st.markdown("### Year x legal form matrix")
+            matrix_df = pd.DataFrame.from_dict(matrix_raw, orient="index").fillna(0)
+            matrix_df.index = matrix_df.index.astype(str)
+            st.dataframe(matrix_df, width="stretch")
+
+        miss = summary.get("missing_fields", {})
+        if miss:
+            st.markdown("### Missing-field analysis")
+            miss_df = pd.DataFrame(
+                [
+                    {
+                        "field": k,
+                        "missing_count": v.get("missing_count", 0),
+                        "missing_rate": v.get("missing_rate", 0.0),
+                    }
+                    for k, v in miss.items()
+                ]
+            )
+            st.dataframe(miss_df, width="stretch", hide_index=True)
+
+        st.info("Raw records are intentionally excluded in this deployment. Only aggregated metrics are shown.")
         return
 
     df = filter_df_by_year_range(records_to_dataframe(records), year_range)
@@ -882,14 +975,17 @@ def render_dataset_analytics(output_path: str, year_range: tuple[int, int]) -> N
     missing_df = compute_missing_stats(df, core_fields)
     st.dataframe(missing_df, width="stretch", hide_index=True)
 
-    st.markdown("### Preview")
-    st.dataframe(df.head(50), width="stretch")
-
-    csv_data = df.to_csv(index=False).encode("utf-8")
+    summary_export = {
+        "records": len(df),
+        "year_range": [year_range[0], year_range[1]],
+        "by_legal_form": by_form.to_dict(orient="records") if "by_form" in locals() else [],
+        "missing_fields": missing_df.to_dict(orient="records"),
+    }
+    csv_data = pd.DataFrame(summary_export["by_legal_form"]).to_csv(index=False).encode("utf-8")
     st.download_button(
-        label="Download analytics CSV",
+        label="Download aggregated metrics CSV",
         data=csv_data,
-        file_name="jort_extraction_preview.csv",
+        file_name="jort_metrics_summary.csv",
         mime="text/csv",
     )
 
@@ -900,13 +996,13 @@ def main() -> None:
 
     mode = cfg["mode"]
     if mode == "Tutor Presentation (Story Mode)":
-        render_tutor_presentation(cfg["output_path"], cfg["year_range"])
+        render_tutor_presentation(cfg["output_path"], cfg["summary_path"], cfg["year_range"])
     elif mode == "Project Showcase":
         render_project_showcase()
     elif mode == "Single Notice Demo":
         render_single_notice_demo(cfg["friend_index"])
     else:
-        render_dataset_analytics(cfg["output_path"], cfg["year_range"])
+        render_dataset_analytics(cfg["output_path"], cfg["summary_path"], cfg["year_range"])
 
 
 if __name__ == "__main__":

@@ -1,0 +1,140 @@
+{
+  "meta": {
+    "source": "/home/iyedpc1/jort/output/extracted_notices.json",
+    "year_range": [
+      2004,
+      2014
+    ],
+    "total_records": 85811,
+    "legal_forms": 4,
+    "years": 11
+  },
+  "records_by_year": {
+    "2004": 4825,
+    "2005": 5633,
+    "2006": 6407,
+    "2007": 9425,
+    "2008": 8747,
+    "2009": 7156,
+    "2010": 8794,
+    "2011": 8538,
+    "2012": 8378,
+    "2013": 8743,
+    "2014": 9165
+  },
+  "records_by_legal_form": {
+    "anonyme": 2476,
+    "autre": 2597,
+    "sarl": 74288,
+    "suarl": 6450
+  },
+  "year_legal_form_matrix": {
+    "2004": {
+      "anonyme": 271,
+      "autre": 132,
+      "sarl": 3745,
+      "suarl": 677
+    },
+    "2005": {
+      "anonyme": 259,
+      "autre": 140,
+      "sarl": 4318,
+      "suarl": 916
+    },
+    "2006": {
+      "anonyme": 215,
+      "autre": 234,
+      "sarl": 4805,
+      "suarl": 1153
+    },
+    "2007": {
+      "anonyme": 239,
+      "autre": 606,
+      "sarl": 6827,
+      "suarl": 1753
+    },
+    "2008": {
+      "anonyme": 260,
+      "autre": 258,
+      "sarl": 6347,
+      "suarl": 1882
+    },
+    "2009": {
+      "anonyme": 258,
+      "autre": 166,
+      "sarl": 6701,
+      "suarl": 31
+    },
+    "2010": {
+      "anonyme": 281,
+      "autre": 224,
+      "sarl": 8289
+    },
+    "2011": {
+      "anonyme": 194,
+      "autre": 160,
+      "sarl": 8182,
+      "suarl": 2
+    },
+    "2012": {
+      "anonyme": 169,
+      "autre": 179,
+      "sarl": 8027,
+      "suarl": 3
+    },
+    "2013": {
+      "anonyme": 177,
+      "autre": 252,
+      "sarl": 8299,
+      "suarl": 15
+    },
+    "2014": {
+      "anonyme": 153,
+      "autre": 246,
+      "sarl": 8748,
+      "suarl": 18
+    }
+  },
+  "missing_fields": {
+    "company_name": {
+      "missing_count": 507,
+      "missing_rate": 0.59
+    },
+    "capital": {
+      "missing_count": 2663,
+      "missing_rate": 3.1
+    },
+    "address": {
+      "missing_count": 5757,
+      "missing_rate": 6.71
+    },
+    "corporate_purpose": {
+      "missing_count": 1717,
+      "missing_rate": 2.0
+    },
+    "duration": {
+      "missing_count": 5174,
+      "missing_rate": 6.03
+    },
+    "manager": {
+      "missing_count": 4976,
+      "missing_rate": 5.8
+    },
+    "president_directeur_general": {
+      "missing_count": 84592,
+      "missing_rate": 98.58
+    },
+    "president": {
+      "missing_count": 84470,
+      "missing_rate": 98.44
+    },
+    "directeur_general": {
+      "missing_count": 84921,
+      "missing_rate": 98.96
+    },
+    "auditor": {
+      "missing_count": 85254,
+      "missing_rate": 99.35
+    }
+  }
+}
